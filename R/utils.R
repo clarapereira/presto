@@ -59,8 +59,29 @@ compute_pval <- function(ustat, ties, N, n1n2) {
     usigma <- sqrt(matrix(n1n2, ncol = 1) %*% matrix(rhs, nrow = 1))
     z <- t(z / usigma)
 
-    pvals <- matrix(2 * pnorm(-abs(as.numeric(z))), ncol = ncol(z))
-    return(pvals)
+    #pvals <- matrix(2 * pnorm(-abs(as.numeric(z))), ncol = ncol(z))
+    #return(pvals)
+    
+    log.pvals <- matrix(2 * pnorm(-abs(as.numeric(z)), log.p = TRUE), ncol = ncol(z)) # added log.p = TRUE
+    return(log.pvals)
+}
+
+log.p.adjust <- function(log.pvals, method = "BH") {
+  if (method != "BH") stop("Using log.p.adjust; currently, only BH method is supported for log.p.adjust")
+  
+  n <- length(log.pvals)
+  ord <- order(log.pvals)  # Order of log-pvals (increasing)
+  log.pvals <- log.pvals[ord]  # Sort log-pvals
+  log.adj.pvals <- rep(NA, n)  # Placeholder for adjusted log p-values
+  
+  # Compute the BH adjustment in log space
+  log.adj.pvals[n] <- log.pvals[n] + log(n) - log(n)  # Last value is p_n * n / n = p_n
+  for (i in (n - 1):1) {
+    log.adj.pvals[i] <- min(log.pvals[i] + log(n) - log(i), log.adj.pvals[i + 1])
+  }
+  
+  # Reorder back to original positions
+  log.adj.pvals[order(ord)]  # Undo sorting
 }
 
 

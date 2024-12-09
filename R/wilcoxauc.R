@@ -175,8 +175,10 @@ wilcoxauc.default <- function(X, y, groups_use = NULL, verbose = TRUE, ...) {
 
     ustat <- compute_ustat(rank_res$X_ranked, y, n1n2, group.size)
     auc <- t(ustat / n1n2)
-    pvals <- compute_pval(ustat, rank_res$ties, ncol(X), n1n2)
-    fdr <- apply(pvals, 2, function(x) p.adjust(x, "BH"))
+    #pvals <- compute_pval(ustat, rank_res$ties, ncol(X), n1n2)
+    log.pvals <- compute_pval(ustat, rank_res$ties, ncol(X), n1n2)
+    #fdr <- apply(pvals, 2, function(x) p.adjust(x, "BH"))
+    fdr <- exp(apply(log.pvals, 2, function(x) log.p.adjust(x, "BH")))  # Apply BH adjustment in log space and then exponentiate back
 
     ### Auxiliary Statistics (AvgExpr, PctIn, LFC, etc)
     group_sums <- sumGroups(X, y, 1)
@@ -193,7 +195,8 @@ wilcoxauc.default <- function(X, y, groups_use = NULL, verbose = TRUE, ...) {
     }))
 
     res_list <- list(auc = auc,
-                pval = pvals,
+                #pval = pvals,
+                pval = exp(log.pvals),
                 padj = fdr,
                 pct_in = 100 * group_pct,
                 pct_out = 100 * group_pct_out,
